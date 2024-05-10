@@ -105,7 +105,8 @@ groups = mgxs.EnergyGroups(group_edges = choose_group)
 
 #Choose all universe of interest
 openmc_cells=model.geometry.get_all_cells().values()
-
+print(openmc_cells)
+exit()
 #Choose all reaction of interest
 xs_library = {}
 for cell in openmc_cells:
