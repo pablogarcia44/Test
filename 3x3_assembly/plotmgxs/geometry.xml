@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<geometry>
+  <cell id="1" material="1" name="fuel" region="-1" universe="1"/>
+  <cell id="2" material="void" name="gap" region="1 -2" universe="1"/>
+  <cell id="3" material="2" name="clad" region="2 -3" universe="1"/>
+  <cell id="4" material="4" name="moderator" region="4 -5 6 -7 3" universe="1"/>
+  <cell fill="2" id="5" name="root cell" region="-13 11 -12 8 -9 -10" universe="0"/>
+  <lattice id="2" name="1.6% Fuel Assembly">
+    <pitch>1.26 1.26</pitch>
+    <dimension>5 5</dimension>
+    <lower_left>-1.8900000000000001 -1.8900000000000001</lower_left>
+    <universes>
+1 1 1 1 1 
+1 1 1 1 1 
+1 1 1 1 1 
+1 1 1 1 1 
+1 1 1 1 1 </universes>
+  </lattice>
+  <surface coeffs="0.0 0.0 0.39" id="1" type="z-cylinder"/>
+  <surface coeffs="0.0 0.0 0.4" id="2" type="z-cylinder"/>
+  <surface coeffs="0.0 0.0 0.46" id="3" type="z-cylinder"/>
+  <surface boundary="reflective" coeffs="-0.63" id="4" type="x-plane"/>
+  <surface boundary="reflective" coeffs="0.63" id="5" type="x-plane"/>
+  <surface boundary="reflective" coeffs="-0.63" id="6" type="y-plane"/>
+  <surface boundary="reflective" coeffs="0.63" id="7" type="y-plane"/>
+  <surface boundary="reflective" coeffs="0" id="8" type="x-plane"/>
+  <surface boundary="reflective" coeffs="1.0 -1.0 0 0" id="9" type="plane"/>
+  <surface boundary="reflective" coeffs="1.8900000000000001" id="10" type="y-plane"/>
+  <surface boundary="reflective" coeffs="-10.0" id="11" type="z-plane"/>
+  <surface boundary="reflective" coeffs="10.0" id="12" type="z-plane"/>
+  <surface coeffs="0.0 0.0 3.15" id="13" type="z-cylinder"/>
+</geometry>
