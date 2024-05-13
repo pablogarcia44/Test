@@ -5,3 +5,5 @@
 *.xml
 *.txt
 *.out
+*.bak
+*.*~
