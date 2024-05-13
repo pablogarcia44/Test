@@ -2,3 +2,6 @@
 *.ipynb_checkpoints
 *.h5
 *.csv
+*.xml
+*.txt
+*.out
