@@ -14,6 +14,7 @@ for file in clean_file_list :
     if os.path.exists(path_file):
         os.remove(path_file)
 
+model=openmc.Model()
 #Materials
 uo2 = openmc.Material(name='uo2')
 uo2.add_nuclide('U235', 0.03)
@@ -29,6 +30,11 @@ water.add_nuclide('O16', 1.0)
 water.set_density('g/cm3', 1.0)
 water.add_s_alpha_beta('c_H_in_H2O')
 model.materials = openmc.Materials([uo2, zirconium, water]) 
+#Perso path
+#model.materials.cross_sections = '/home/pablo/internship/xs_for_input/cross_sections.xml'
+#Mac path
+model.materials.cross_sections = '/Users/pablogarcia44/repo/cross_sections.xml'
+
 
 #Geometry
 def pincell(index_x,index_y):
@@ -84,7 +90,7 @@ def guide(index_x,index_y):
 assembly = openmc.RectLattice()
 pitch=1.26
 dr=2e-1 # cm of water that is outside assembly
-size=17 #size of the assembly 
+size=17 # #size of the assembly 
 pitch_assembly=size*pitch+2*dr 
 assembly.pitch = (pitch,pitch)
 assembly.lower_left = (-size/2*pitch, -size/2*pitch)
@@ -128,9 +134,9 @@ settings = openmc.Settings()
 settings.source = source
 settings = openmc.Settings()
 settings.source = source
-settings.batches = 50
-settings.inactive = 10
-settings.particles = 500000
+settings.batches = 500
+settings.inactive = 100
+settings.particles = 25000000
 settings.output = {'tallies':True}
 model.settings = settings
 
@@ -152,4 +158,7 @@ tallies = openmc.Tallies()
 mgxs_lib.add_to_tallies_file(tallies, merge=True)
 model.tallies = tallies
 
-model.export_to_xml()
+#model.export_to_xml()
+model.export_to_model_xml()
+
+#sp_file = model.run()
