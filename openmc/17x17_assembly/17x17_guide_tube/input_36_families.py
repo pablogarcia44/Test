@@ -8,13 +8,8 @@ import pandas as pd
 from IPython.display import Image
 import glob
 
-clean_file_list=["model.xml","materials.xml","geometry.xml","plots.xml","geometry.xml","settings.xml","tallies.out","summary.h5","statepoint.50.h5"]
-for file in clean_file_list :
-    path_file = os.path.join(os.getcwd(), file)
-    if os.path.exists(path_file):
-        os.remove(path_file)
-
 model=openmc.Model()
+
 #Materials
 uo2 = openmc.Material(name='uo2')
 uo2.add_nuclide('U235', 0.03)
@@ -31,10 +26,9 @@ water.set_density('g/cm3', 1.0)
 water.add_s_alpha_beta('c_H_in_H2O')
 model.materials = openmc.Materials([uo2, zirconium, water]) 
 #Perso path
-#model.materials.cross_sections = '/home/pablo/internship/xs_for_input/cross_sections.xml'
+model.materials.cross_sections = '/home/pablo/internship/xs_for_input/cross_sections.xml'
 #Mac path
-model.materials.cross_sections = '/Users/pablogarcia44/repo/cross_sections.xml'
-
+#model.materials.cross_sections = '/Users/pablogarcia44/repo/cross_sections.xml'
 
 #Geometry
 def pincell(index_x,index_y):
@@ -86,46 +80,55 @@ def guide(index_x,index_y):
     moderator.region = water_region 
     u = openmc.Universe(name='u_guide'+'_'+str(index_x)+'_'+str(index_y),cells=(water_guide, clad, moderator))
     return(u,water_guide,water_guide,clad,moderator)
-    
+
+GT=[(5,2),(8,2),(3,3),(2,5),(5,5),(8,5),(2,8),(5,8),(8,8)]
+
+GT_left=[]
+GT_full=[]
+for X in GT:
+    GT_left.append((X[0],X[1]))
+    GT_left.append((X[0],16-X[1]))
+for X in GT_left:
+    GT_full.append((X[0],X[1]))
+    GT_full.append((16-X[0],X[1]))    
+GT_full = list(set(GT_full))
+
 assembly = openmc.RectLattice()
 pitch=1.26
 dr=2e-1 # cm of water that is outside assembly
-size=17 # #size of the assembly 
+size=17 #size of the assembly 
 pitch_assembly=size*pitch+2*dr 
 assembly.pitch = (pitch,pitch)
 assembly.lower_left = (-size/2*pitch, -size/2*pitch)
-#template 17x17 for GT
-template_x = np.array([5, 8, 11, 3, 13, 2, 5, 8, 11, 14, 2, 5, 8,
-                           11, 14, 2, 5, 8, 11, 14, 3, 13, 5, 8, 11])
-template_y = np.array([2, 2, 2, 3, 3, 5, 5, 5, 5, 5, 8, 8, 8, 8,
-                           8, 11, 11, 11, 11, 11, 13, 13, 14, 14, 14])
 A= np.empty((size, size), dtype=openmc.universe.Universe)
 for ix in range(size):
     for iy in range(size):
-        indices_x = np.where(template_x == ix)[0]
-        indices_y = np.where(template_y == iy)[0]
-        if any(i in indices_y for i in indices_x):
+        if (ix,iy) in GT : 
             A[ix][iy]=guide(ix,iy)[0]
         else:
-            A[ix][iy]=pincell(ix,iy)[0]      
+            A[ix][iy]=pincell(ix,iy)[0]       
 assembly.universes = A
 moderator_outside = openmc.Cell()
 moderator_outside.fill = water
 all_water = openmc.Universe()
 all_water.add_cell(moderator_outside)
 assembly.outer=all_water
+
+# 1/4 assembly
 min_x = openmc.XPlane(x0=-(size/2*pitch+dr), boundary_type='reflective')
 max_x = openmc.XPlane(x0=0, boundary_type='reflective')
 min_y = openmc.YPlane(y0=0, boundary_type='reflective')
 max_y = openmc.YPlane(y0=+(size/2*pitch+dr), boundary_type='reflective')
 min_z = openmc.ZPlane(z0=-10., boundary_type='reflective')
 max_z = openmc.ZPlane(z0=+10., boundary_type='reflective')
+
 root_cell = openmc.Cell(name='root cell', fill=assembly)
 root_cell.region = +min_x & -max_x & +min_y & -max_y & +min_z & -max_z
+
 model.geometry.root_universe = openmc.Universe(name='root universe')
 model.geometry.root_universe.add_cell(root_cell)
 
-# Settings
+#Settings
 bounds = [-pitch_assembly/2, 0, -10, 0, +pitch_assembly/2, 10]
 uniform_dist = openmc.stats.Box(bounds[:3], bounds[3:], only_fissionable=True)
 source = openmc.IndependentSource(space=uniform_dist)
@@ -134,9 +137,9 @@ settings = openmc.Settings()
 settings.source = source
 settings = openmc.Settings()
 settings.source = source
-settings.batches = 500
-settings.inactive = 100
-settings.particles = 25000000
+settings.batches = 50
+settings.inactive = 10
+settings.particles = 5000
 settings.output = {'tallies':True}
 model.settings = settings
 
@@ -158,7 +161,27 @@ tallies = openmc.Tallies()
 mgxs_lib.add_to_tallies_file(tallies, merge=True)
 model.tallies = tallies
 
-#model.export_to_xml()
 model.export_to_model_xml()
+statepoint_filename = model.run()
 
-#sp_file = model.run()
+# Move the statepoint File
+ce_spfile = './statepoint_ce.h5'
+os.rename(statepoint_filename, ce_spfile)
+# Move the Summary file
+ce_sumfile = './summary_ce.h5'
+os.rename('summary.h5', ce_sumfile)
+
+# Load the statepoint file
+sp = openmc.StatePoint(ce_spfile, autolink=False)
+
+# Load the summary file in its new location
+su = openmc.Summary(ce_sumfile)
+sp.link_with_summary(su)
+
+mgxs_lib.load_from_statepoint(sp)
+
+# Create a MGXS File which can then be written to disk
+mgxs_file = mgxs_lib.create_mg_library(xs_type='macro')
+
+# Write the file to disk using the default filename of "mgxs.h5"
+mgxs_file.export_to_hdf5()
